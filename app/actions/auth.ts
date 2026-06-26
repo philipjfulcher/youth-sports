@@ -7,7 +7,7 @@ import { getUserByEmail, createUser } from '@/lib/queries/users'
 import { createSwimmer } from '@/lib/queries/swimmers'
 import { getSession } from '@/lib/session'
 
-export async function login(formData: FormData) {
+export async function login(_prevState: { error: string } | undefined, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
@@ -27,7 +27,7 @@ export async function login(formData: FormData) {
   redirect('/dashboard')
 }
 
-export async function register(formData: FormData) {
+export async function register(_prevState: { error: string } | undefined, formData: FormData) {
   const name = formData.get('name') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
