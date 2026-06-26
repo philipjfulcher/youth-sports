@@ -9,7 +9,11 @@ export interface SessionData {
 }
 
 export const sessionOptions = {
-  password: process.env.SESSION_SECRET ?? 'riverside-marlins-super-secret-key-change-in-prod-32chars',
+  password: process.env.SESSION_SECRET ?? (
+    process.env.NODE_ENV === 'production'
+      ? (() => { throw new Error('SESSION_SECRET must be set in production') })()
+      : 'dev-only-key-not-for-production'
+  ),
   cookieName: 'marlins-session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',

@@ -34,6 +34,10 @@ export async function register(_prevState: { error: string } | undefined, formDa
   const age = parseInt(formData.get('age') as string) || null
   const strokeSpecialty = formData.get('strokeSpecialty') as string || null
 
+  if (!name || name.trim().length === 0) return { error: 'Name is required' }
+  if (!email || !email.includes('@')) return { error: 'A valid email is required' }
+  if (!password || password.length < 6) return { error: 'Password must be at least 6 characters' }
+
   const db = getDb()
   const existing = getUserByEmail(db, email)
   if (existing) return { error: 'An account with that email already exists' }

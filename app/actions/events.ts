@@ -9,6 +9,7 @@ import { requireAuth, requireCoach } from '@/lib/session'
 
 export async function signUp(eventId: number) {
   const session = await requireAuth()
+  if (session.role === 'coach') return
   const db = getDb()
   signUpForEvent(db, eventId, session.userId!)
   revalidatePath('/events')
@@ -17,6 +18,7 @@ export async function signUp(eventId: number) {
 
 export async function withdraw(eventId: number) {
   const session = await requireAuth()
+  if (session.role === 'coach') return
   const db = getDb()
   withdrawFromEvent(db, eventId, session.userId!)
   revalidatePath('/events')

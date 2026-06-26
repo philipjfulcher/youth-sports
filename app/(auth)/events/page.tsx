@@ -52,18 +52,20 @@ export default async function EventsPage() {
                 {event.description && <p className="text-sm text-gray-600 mt-2">{event.description}</p>}
               </div>
               <div className="flex gap-2 flex-shrink-0">
-                {signed ? (
-                  <form action={withdraw.bind(null, event.id)}>
-                    <button type="submit" className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
-                      Withdraw
-                    </button>
-                  </form>
-                ) : (
-                  <form action={signUp.bind(null, event.id)}>
-                    <button type="submit" className="text-sm px-3 py-1.5 rounded-lg bg-blue-800 text-white hover:bg-blue-700">
-                      Sign Up
-                    </button>
-                  </form>
+                {session.role === 'swimmer' && (
+                  signed ? (
+                    <form action={withdraw.bind(null, event.id)}>
+                      <button type="submit" className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
+                        Withdraw
+                      </button>
+                    </form>
+                  ) : (
+                    <form action={signUp.bind(null, event.id)}>
+                      <button type="submit" className="text-sm px-3 py-1.5 rounded-lg bg-blue-800 text-white hover:bg-blue-700">
+                        Sign Up
+                      </button>
+                    </form>
+                  )
                 )}
                 {session.role === 'coach' && (
                   <form action={removeEvent.bind(null, event.id)}>
