@@ -1,11 +1,20 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormState, useFormStatus } from 'react-dom'
 import { register } from '@/app/actions/auth'
 import Link from 'next/link'
 
+function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
+  const { pending } = useFormStatus()
+  return (
+    <button type="submit" disabled={pending} className="w-full bg-blue-800 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
+      {pending ? pendingLabel : label}
+    </button>
+  )
+}
+
 export default function RegisterPage() {
-  const [state, action, pending] = useActionState(register, undefined)
+  const [state, action] = useFormState(register, undefined)
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -42,9 +51,7 @@ export default function RegisterPage() {
               <option value="individual medley">Individual Medley</option>
             </select>
           </div>
-          <button type="submit" disabled={pending} className="w-full bg-blue-800 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
-            {pending ? 'Creating account…' : 'Create Account'}
-          </button>
+          <SubmitButton label="Create Account" pendingLabel="Creating account…" />
         </form>
         <p className="mt-4 text-sm text-center text-gray-600">
           Already a member? <Link href="/login" className="text-blue-700 hover:underline">Sign in</Link>
