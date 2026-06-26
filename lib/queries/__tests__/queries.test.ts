@@ -4,9 +4,8 @@ import { createUser, getUserByEmail } from '../users'
 import { createSwimmer, getSwimmerByUserId, getAllSwimmers } from '../swimmers'
 import { getAllEvents, createEvent, deleteEvent, getEventById } from '../events'
 import { signUpForEvent, withdrawFromEvent, isSignedUp, getSignupsForUser } from '../signups'
-import { getTeamRecords, getRecordsForSwimmer } from '../records'
+import { getTeamRecords } from '../records'
 import { getAllMeets } from '../meets'
-import { getAllCoaches } from '../coaches'
 
 function createTestDb(): Database.Database {
   const db = new Database(':memory:')
