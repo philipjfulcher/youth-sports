@@ -13,7 +13,7 @@ export async function login(_prevState: { error: string } | undefined, formData:
   const password = formData.get('password') as string
 
   const db = getDb()
-  const user = await getUserByEmail(db, email)
+  const user = getUserByEmail(db, email)
   if (!user) return { error: 'Invalid email or password' }
 
   const valid = await bcrypt.compare(password, user.password_hash)
@@ -44,12 +44,12 @@ export async function register(_prevState: { error: string } | undefined, formDa
   if (!password || password.length < 6) return { error: 'Password must be at least 6 characters' }
 
   const db = getDb()
-  const existing = await getUserByEmail(db, email)
+  const existing = getUserByEmail(db, email)
   if (existing) return { error: 'An account with that email already exists' }
 
   const passwordHash = await bcrypt.hash(password, 10)
-  const userId = await createUser(db, { name, email, passwordHash, role: 'swimmer' })
-  await createSwimmer(db, { userId, age, strokeSpecialty })
+  const userId = createUser(db, { name, email, passwordHash, role: 'swimmer' })
+  createSwimmer(db, { userId, age, strokeSpecialty })
 
   const session = await getSession()
   session.userId = userId

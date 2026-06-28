@@ -9,11 +9,11 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate": "netlify database migrations apply"
+    "seed": "npx tsx data/seed.ts"
   },
   "dependencies": {
-    "@netlify/database": "^1.1.0",
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
     "iron-session": "^8.0.4",
     "next": "14.2.35",
     "react": "^18",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

@@ -1,4 +1,4 @@
-import type { DatabaseConnection } from '@netlify/database'
+import type Database from 'better-sqlite3'
 
 export interface EventSignup {
   id: number
@@ -7,24 +7,19 @@ export interface EventSignup {
   signed_up_at: string
 }
 
-export async function getSignupsForUser(db: DatabaseConnection, userId: number): Promise<EventSignup[]> {
-  return db.sql<EventSignup>`SELECT * FROM event_signups WHERE user_id = ${userId}`
+export function getSignupsForUser(db: Database.Database, userId: number): EventSignup[] {
+  return db.prepare('SELECT * FROM event_signups WHERE user_id = ?').all(userId) as EventSignup[]
 }
 
-export async function isSignedUp(db: DatabaseConnection, eventId: number, userId: number): Promise<boolean> {
-  const rows = await db.sql<{ id: number }>`
-    SELECT id FROM event_signups WHERE event_id = ${eventId} AND user_id = ${userId} LIMIT 1
-  `
-  return rows.length > 0
+export function isSignedUp(db: Database.Database, eventId: number, userId: number): boolean {
+  const row = db.prepare('SELECT id FROM event_signups WHERE event_id = ? AND user_id = ?').get(eventId, userId)
+  return row !== undefined
 }
 
-export async function signUpForEvent(db: DatabaseConnection, eventId: number, userId: number): Promise<void> {
-  await db.sql`
-    INSERT INTO event_signups (event_id, user_id) VALUES (${eventId}, ${userId})
-    ON CONFLICT DO NOTHING
-  `
+export function signUpForEvent(db: Database.Database, eventId: number, userId: number): void {
+  db.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventId, userId)
 }
 
-export async function withdrawFromEvent(db: DatabaseConnection, eventId: number, userId: number): Promise<void> {
-  await db.sql`DELETE FROM event_signups WHERE event_id = ${eventId} AND user_id = ${userId}`
+export function withdrawFromEvent(db: Database.Database, eventId: number, userId: number): void {
+  db.prepare('DELETE FROM event_signups WHERE event_id = ? AND user_id = ?').run(eventId, userId)
 }

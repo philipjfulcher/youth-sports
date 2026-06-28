@@ -3,9 +3,9 @@ export const dynamic = 'force-dynamic'
 import { getDb } from '@/lib/db'
 import { getAllCoaches } from '@/lib/queries/coaches'
 
-export default async function AboutPage() {
+export default function AboutPage() {
   const db = getDb()
-  const coaches = await getAllCoaches(db)
+  const coaches = getAllCoaches(db)
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">

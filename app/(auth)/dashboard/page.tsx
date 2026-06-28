@@ -11,10 +11,8 @@ function formatDate(dateStr: string): string {
 export default async function DashboardPage() {
   const session = await getSession()
   const db = getDb()
-  const [allEvents, signups] = await Promise.all([
-    getAllEvents(db),
-    getSignupsForUser(db, session.userId!),
-  ])
+  const allEvents = getAllEvents(db)
+  const signups = getSignupsForUser(db, session.userId!)
   const signedUpIds = new Set(signups.map(s => s.event_id))
   const upcomingSignups = allEvents.filter(e => signedUpIds.has(e.id))
 

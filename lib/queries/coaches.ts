@@ -1,4 +1,4 @@
-import type { DatabaseConnection } from '@netlify/database'
+import type Database from 'better-sqlite3'
 
 export interface Coach {
   id: number
@@ -12,16 +12,15 @@ export interface CoachWithUser extends Coach {
   email: string
 }
 
-export async function getAllCoaches(db: DatabaseConnection): Promise<CoachWithUser[]> {
-  return db.sql<CoachWithUser>`
+export function getAllCoaches(db: Database.Database): CoachWithUser[] {
+  return db.prepare(`
     SELECT c.*, u.name, u.email
     FROM coaches c
     JOIN users u ON u.id = c.user_id
     ORDER BY u.name
-  `
+  `).all() as CoachWithUser[]
 }
 
-export async function getCoachByUserId(db: DatabaseConnection, userId: number): Promise<Coach | undefined> {
-  const rows = await db.sql<Coach>`SELECT * FROM coaches WHERE user_id = ${userId} LIMIT 1`
-  return rows[0]
+export function getCoachByUserId(db: Database.Database, userId: number): Coach | undefined {
+  return db.prepare('SELECT * FROM coaches WHERE user_id = ?').get(userId) as Coach | undefined
 }

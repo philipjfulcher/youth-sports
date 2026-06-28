@@ -1,4 +1,4 @@
-import type { DatabaseConnection } from '@netlify/database'
+import type Database from 'better-sqlite3'
 
 export interface Swimmer {
   id: number
@@ -13,28 +13,25 @@ export interface SwimmerWithUser extends Swimmer {
   email: string
 }
 
-export async function createSwimmer(
-  db: DatabaseConnection,
+export function createSwimmer(
+  db: Database.Database,
   data: { userId: number; age: number | null; strokeSpecialty: string | null }
-): Promise<number> {
-  const rows = await db.sql<{ id: number }>`
-    INSERT INTO swimmers (user_id, age, stroke_specialty)
-    VALUES (${data.userId}, ${data.age}, ${data.strokeSpecialty})
-    RETURNING id
-  `
-  return rows[0].id
+): number {
+  const result = db
+    .prepare('INSERT INTO swimmers (user_id, age, stroke_specialty) VALUES (?, ?, ?)')
+    .run(data.userId, data.age, data.strokeSpecialty)
+  return result.lastInsertRowid as number
 }
 
-export async function getSwimmerByUserId(db: DatabaseConnection, userId: number): Promise<Swimmer | undefined> {
-  const rows = await db.sql<Swimmer>`SELECT * FROM swimmers WHERE user_id = ${userId} LIMIT 1`
-  return rows[0]
+export function getSwimmerByUserId(db: Database.Database, userId: number): Swimmer | undefined {
+  return db.prepare('SELECT * FROM swimmers WHERE user_id = ?').get(userId) as Swimmer | undefined
 }
 
-export async function getAllSwimmers(db: DatabaseConnection): Promise<SwimmerWithUser[]> {
-  return db.sql<SwimmerWithUser>`
+export function getAllSwimmers(db: Database.Database): SwimmerWithUser[] {
+  return db.prepare(`
     SELECT s.*, u.name, u.email
     FROM swimmers s
     JOIN users u ON u.id = s.user_id
     ORDER BY u.name
-  `
+  `).all() as SwimmerWithUser[]
 }

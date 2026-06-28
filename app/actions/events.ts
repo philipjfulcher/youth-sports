@@ -12,7 +12,7 @@ export async function signUp(eventId: number) {
   const session = await requireAuth()
   if (session.role === 'coach') return
   const db = getDb()
-  await signUpForEvent(db, eventId, session.userId!)
+  signUpForEvent(db, eventId, session.userId!)
 
   await pendoTrack('event_signup', session.userId!, {
     event_id: eventId,
@@ -26,7 +26,7 @@ export async function withdraw(eventId: number) {
   const session = await requireAuth()
   if (session.role === 'coach') return
   const db = getDb()
-  await withdrawFromEvent(db, eventId, session.userId!)
+  withdrawFromEvent(db, eventId, session.userId!)
 
   await pendoTrack('event_withdrawal', session.userId!, {
     event_id: eventId,
@@ -42,7 +42,7 @@ export async function createNewEvent(formData: FormData) {
   const description = formData.get('description') as string
   const location = formData.get('location') as string
   const eventType = formData.get('eventType') as string
-  await createEvent(db, {
+  createEvent(db, {
     title: formData.get('title') as string,
     description,
     eventDate: formData.get('eventDate') as string,
@@ -63,7 +63,7 @@ export async function createNewEvent(formData: FormData) {
 export async function removeEvent(eventId: number) {
   const session = await requireCoach()
   const db = getDb()
-  await deleteEvent(db, eventId)
+  deleteEvent(db, eventId)
 
   await pendoTrack('event_deleted', session.userId!, {
     event_id: eventId,

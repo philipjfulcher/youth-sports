@@ -1,4 +1,4 @@
-import type { DatabaseConnection } from '@netlify/database'
+import type Database from 'better-sqlite3'
 
 export interface Meet {
   id: number
@@ -8,6 +8,6 @@ export interface Meet {
   results_summary: string | null
 }
 
-export async function getAllMeets(db: DatabaseConnection): Promise<Meet[]> {
-  return db.sql<Meet>`SELECT * FROM meets ORDER BY date DESC`
+export function getAllMeets(db: Database.Database): Meet[] {
+  return db.prepare('SELECT * FROM meets ORDER BY date DESC').all() as Meet[]
 }
