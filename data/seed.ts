@@ -1,13 +1,10 @@
 import Database from 'better-sqlite3'
 import bcrypt from 'bcryptjs'
-import path from 'path'
-import fs from 'fs'
 
-const dbPath = path.join(process.cwd(), 'data', 'youth-sports.db')
-fs.mkdirSync(path.dirname(dbPath), { recursive: true })
+const dbPath = '/tmp/youth-sports.db'
 
 // Delete existing DB for fresh seed
-if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath)
+import fs from 'fs'; if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath)
 
 const db = new Database(dbPath)
 db.pragma('journal_mode = WAL')
