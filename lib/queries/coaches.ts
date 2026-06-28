@@ -1,4 +1,4 @@
-import type { DatabaseConnection } from '@netlify/database'
+import { conn } from '../db';
 
 export interface Coach {
   id: number
@@ -12,16 +12,19 @@ export interface CoachWithUser extends Coach {
   email: string
 }
 
-export async function getAllCoaches(db: DatabaseConnection): Promise<CoachWithUser[]> {
-  return db.sql<CoachWithUser>`
+export async function getAllCoaches(): Promise<CoachWithUser[]> {
+  const stmt = await conn.prepare(`
     SELECT c.*, u.name, u.email
     FROM coaches c
     JOIN users u ON u.id = c.user_id
     ORDER BY u.name
-  `
+  `);
+
+  return await stmt.all() as CoachWithUser[]
 }
 
-export async function getCoachByUserId(db: DatabaseConnection, userId: number): Promise<Coach | undefined> {
-  const rows = await db.sql<Coach>`SELECT * FROM coaches WHERE user_id = ${userId} LIMIT 1`
-  return rows[0]
+export async function getCoachByUserId(userId: number): Promise<Coach | undefined> {
+  const stmt = await conn.prepare('SELECT * FROM coaches WHERE user_id = ?')
+
+  return await stmt.get(userId) as Coach | undefined
 }

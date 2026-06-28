@@ -1,4 +1,4 @@
-import type { DatabaseConnection } from '@netlify/database'
+import { conn } from '../db';
 
 export interface EventSignup {
   id: number
@@ -7,24 +7,23 @@ export interface EventSignup {
   signed_up_at: string
 }
 
-export async function getSignupsForUser(db: DatabaseConnection, userId: number): Promise<EventSignup[]> {
-  return db.sql<EventSignup>`SELECT * FROM event_signups WHERE user_id = ${userId}`
+export async function getSignupsForUser(userId: number): Promise<EventSignup[]> {
+  const stmt = await conn.prepare('SELECT * FROM event_signups WHERE user_id = ?')
+  return await stmt.all(userId) as EventSignup[]
 }
 
-export async function isSignedUp(db: DatabaseConnection, eventId: number, userId: number): Promise<boolean> {
-  const rows = await db.sql<{ id: number }>`
-    SELECT id FROM event_signups WHERE event_id = ${eventId} AND user_id = ${userId} LIMIT 1
-  `
-  return rows.length > 0
+export async function isSignedUp(eventId: number, userId: number): Promise<boolean> {
+  const stmt = await conn.prepare('SELECT id FROM event_signups WHERE event_id = ? AND user_id = ?')
+  const row = await stmt.get([eventId, userId])
+  return row !== undefined
 }
 
-export async function signUpForEvent(db: DatabaseConnection, eventId: number, userId: number): Promise<void> {
-  await db.sql`
-    INSERT INTO event_signups (event_id, user_id) VALUES (${eventId}, ${userId})
-    ON CONFLICT DO NOTHING
-  `
+export async function signUpForEvent(eventId: number, userId: number): Promise<void> {
+  const stmt = await conn.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)')
+  await stmt.run([eventId, userId])
 }
 
-export async function withdrawFromEvent(db: DatabaseConnection, eventId: number, userId: number): Promise<void> {
-  await db.sql`DELETE FROM event_signups WHERE event_id = ${eventId} AND user_id = ${userId}`
+export async function withdrawFromEvent(eventId: number, userId: number): Promise<void> {
+  const stmt = await conn.prepare('DELETE FROM event_signups WHERE event_id = ? AND user_id = ?')
+  await stmt.run([eventId, userId])
 }

@@ -1,5 +1,6 @@
-import { getDatabase } from '@netlify/database'
+import { connect } from "@tursodatabase/serverless";
 
-export function getDb() {
-  return getDatabase()
-}
+export const conn = connect({
+  url: process.env.TURSO_DATABASE_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});

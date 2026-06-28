@@ -1,4 +1,4 @@
-import type { DatabaseConnection } from '@netlify/database'
+import { conn } from '../db';
 
 export interface Meet {
   id: number
@@ -8,6 +8,7 @@ export interface Meet {
   results_summary: string | null
 }
 
-export async function getAllMeets(db: DatabaseConnection): Promise<Meet[]> {
-  return db.sql<Meet>`SELECT * FROM meets ORDER BY date DESC`
+export async function getAllMeets(): Promise<Meet[]> {
+  const stmt = await conn.prepare('SELECT * FROM meets ORDER BY date DESC')
+  return await stmt.all() as Meet[]
 }

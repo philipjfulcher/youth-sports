@@ -2,7 +2,6 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { getDb } from '@/lib/db'
 import { createEvent, deleteEvent } from '@/lib/queries/events'
 import { signUpForEvent, withdrawFromEvent } from '@/lib/queries/signups'
 import { requireAuth, requireCoach } from '@/lib/session'
@@ -11,8 +10,7 @@ import { pendoTrack } from '@/lib/pendo'
 export async function signUp(eventId: number) {
   const session = await requireAuth()
   if (session.role === 'coach') return
-  const db = getDb()
-  await signUpForEvent(db, eventId, session.userId!)
+  await signUpForEvent(eventId, session.userId!)
 
   await pendoTrack('event_signup', session.userId!, {
     event_id: eventId,
@@ -25,8 +23,7 @@ export async function signUp(eventId: number) {
 export async function withdraw(eventId: number) {
   const session = await requireAuth()
   if (session.role === 'coach') return
-  const db = getDb()
-  await withdrawFromEvent(db, eventId, session.userId!)
+  await withdrawFromEvent(eventId, session.userId!)
 
   await pendoTrack('event_withdrawal', session.userId!, {
     event_id: eventId,
@@ -38,11 +35,10 @@ export async function withdraw(eventId: number) {
 
 export async function createNewEvent(formData: FormData) {
   const session = await requireCoach()
-  const db = getDb()
   const description = formData.get('description') as string
   const location = formData.get('location') as string
   const eventType = formData.get('eventType') as string
-  await createEvent(db, {
+  await createEvent({
     title: formData.get('title') as string,
     description,
     eventDate: formData.get('eventDate') as string,
@@ -62,8 +58,7 @@ export async function createNewEvent(formData: FormData) {
 
 export async function removeEvent(eventId: number) {
   const session = await requireCoach()
-  const db = getDb()
-  await deleteEvent(db, eventId)
+  await deleteEvent(eventId)
 
   await pendoTrack('event_deleted', session.userId!, {
     event_id: eventId,

@@ -1,5 +1,4 @@
 import { getSession } from '@/lib/session'
-import { getDb } from '@/lib/db'
 import { getAllEvents } from '@/lib/queries/events'
 import { getSignupsForUser } from '@/lib/queries/signups'
 import { signUp, withdraw, removeEvent } from '@/app/actions/events'
@@ -17,10 +16,9 @@ const eventTypeBadge: Record<string, string> = {
 
 export default async function EventsPage() {
   const session = await getSession()
-  const db = getDb()
   const [events, signups] = await Promise.all([
-    getAllEvents(db),
-    getSignupsForUser(db, session.userId!),
+    getAllEvents(),
+    getSignupsForUser(session.userId!),
   ])
   const signedUpIds = new Set(signups.map(s => s.event_id))
 

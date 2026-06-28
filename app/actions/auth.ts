@@ -2,7 +2,6 @@
 
 import { redirect } from 'next/navigation'
 import bcrypt from 'bcryptjs'
-import { getDb } from '@/lib/db'
 import { getUserByEmail, createUser } from '@/lib/queries/users'
 import { createSwimmer } from '@/lib/queries/swimmers'
 import { getSession } from '@/lib/session'
@@ -12,8 +11,7 @@ export async function login(_prevState: { error: string } | undefined, formData:
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
-  const db = getDb()
-  const user = await getUserByEmail(db, email)
+  const user = await getUserByEmail(email)
   if (!user) return { error: 'Invalid email or password' }
 
   const valid = await bcrypt.compare(password, user.password_hash)
@@ -43,13 +41,12 @@ export async function register(_prevState: { error: string } | undefined, formDa
   if (!email || !email.includes('@')) return { error: 'A valid email is required' }
   if (!password || password.length < 6) return { error: 'Password must be at least 6 characters' }
 
-  const db = getDb()
-  const existing = await getUserByEmail(db, email)
+  const existing = await getUserByEmail(email)
   if (existing) return { error: 'An account with that email already exists' }
 
   const passwordHash = await bcrypt.hash(password, 10)
-  const userId = await createUser(db, { name, email, passwordHash, role: 'swimmer' })
-  await createSwimmer(db, { userId, age, strokeSpecialty })
+  const userId = await createUser({ name, email, passwordHash, role: 'swimmer' })
+  await createSwimmer({ userId, age, strokeSpecialty })
 
   const session = await getSession()
   session.userId = userId

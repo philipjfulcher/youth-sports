@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic'
 
-import { getDb } from '@/lib/db'
 import { getTeamRecords } from '@/lib/queries/records'
 
 function formatTime(seconds: number): string {
@@ -11,8 +10,7 @@ function formatTime(seconds: number): string {
 }
 
 export default async function RecordsPage() {
-  const db = getDb()
-  const records = await getTeamRecords(db)
+  const records = await getTeamRecords()
 
   const grouped = records.reduce<Record<string, typeof records>>((acc, r) => {
     const key = `${r.stroke} — ${r.distance}m`

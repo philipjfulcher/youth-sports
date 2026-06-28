@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/session'
-import { getDb } from '@/lib/db'
+import { conn } from '@/lib/db'
 import { getSwimmerByUserId } from '@/lib/queries/swimmers'
 import { getCoachByUserId } from '@/lib/queries/coaches'
 
@@ -19,11 +19,14 @@ export async function getPendoVisitorData(): Promise<PendoVisitorData | null> {
   const session = await getSession()
   if (!session.userId) return null
 
-  const db = getDb()
-  const rows = await db.sql<{ id: number; name: string; email: string; role: string; created_at: string }>`
-    SELECT id, name, email, role, created_at FROM users WHERE id = ${session.userId} LIMIT 1
-  `
-  const user = rows[0]
+  const stmt = await conn.prepare('SELECT id, name, email, role, created_at FROM users WHERE id = ?')
+  const user = await stmt.get(session.userId) as {
+    id: number
+    name: string
+    email: string
+    role: string
+    created_at: string
+  } | undefined
 
   if (!user) return null
 
@@ -33,14 +36,14 @@ export async function getPendoVisitorData(): Promise<PendoVisitorData | null> {
   let yearsExperience: number | null = null
 
   if (user.role === 'swimmer') {
-    const swimmer = await getSwimmerByUserId(db, user.id)
+    const swimmer = await getSwimmerByUserId(user.id)
     if (swimmer) {
       age = swimmer.age
       strokeSpecialty = swimmer.stroke_specialty
       joinedAt = swimmer.joined_at
     }
   } else if (user.role === 'coach') {
-    const coach = await getCoachByUserId(db, user.id)
+    const coach = await getCoachByUserId(user.id)
     if (coach) {
       yearsExperience = coach.years_experience
     }
