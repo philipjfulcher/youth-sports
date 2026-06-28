@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { getDb } from '@/lib/db'
 import { getAllCoaches } from '@/lib/queries/coaches'
 
