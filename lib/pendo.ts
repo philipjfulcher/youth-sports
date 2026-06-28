@@ -61,3 +61,32 @@ export async function getPendoVisitorData(): Promise<PendoVisitorData | null> {
     yearsExperience,
   }
 }
+
+const PENDO_TRACK_URL = 'https://data.pendo.io/data/track'
+const PENDO_INTEGRATION_KEY = '7503c67b-8e34-45b8-8b92-85ba9d751187'
+
+export async function pendoTrack(
+  event: string,
+  visitorId: string | number,
+  properties?: Record<string, string | number | boolean>
+) {
+  try {
+    await fetch(PENDO_TRACK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-pendo-integration-key': PENDO_INTEGRATION_KEY,
+      },
+      body: JSON.stringify({
+        type: 'track',
+        event,
+        visitorId: String(visitorId),
+        accountId: 'system',
+        timestamp: Date.now(),
+        properties: properties ?? {},
+      }),
+    })
+  } catch (e) {
+    console.error('Pendo track event failed:', e)
+  }
+}

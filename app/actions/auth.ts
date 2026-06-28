@@ -6,6 +6,7 @@ import { getDb } from '@/lib/db'
 import { getUserByEmail, createUser } from '@/lib/queries/users'
 import { createSwimmer } from '@/lib/queries/swimmers'
 import { getSession } from '@/lib/session'
+import { pendoTrack } from '@/lib/pendo'
 
 export async function login(_prevState: { error: string } | undefined, formData: FormData) {
   const email = formData.get('email') as string
@@ -23,6 +24,10 @@ export async function login(_prevState: { error: string } | undefined, formData:
   session.role = user.role
   session.name = user.name
   await session.save()
+
+  await pendoTrack('user_logged_in', user.id, {
+    role: user.role,
+  })
 
   redirect('/dashboard')
 }
@@ -51,6 +56,14 @@ export async function register(_prevState: { error: string } | undefined, formDa
   session.role = 'swimmer'
   session.name = name
   await session.save()
+
+  await pendoTrack('swimmer_registered', userId, {
+    role: 'swimmer',
+    age: age ?? 0,
+    stroke_specialty: strokeSpecialty ?? '',
+    has_age: age !== null,
+    has_stroke_specialty: strokeSpecialty !== null,
+  })
 
   redirect('/dashboard')
 }
