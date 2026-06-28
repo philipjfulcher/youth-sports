@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import { conn } from '../db';
 
 export interface Swimmer {
   id: number
@@ -13,25 +13,25 @@ export interface SwimmerWithUser extends Swimmer {
   email: string
 }
 
-export function createSwimmer(
-  db: Database.Database,
+export async function createSwimmer(
   data: { userId: number; age: number | null; strokeSpecialty: string | null }
-): number {
-  const result = db
-    .prepare('INSERT INTO swimmers (user_id, age, stroke_specialty) VALUES (?, ?, ?)')
-    .run(data.userId, data.age, data.strokeSpecialty)
+): Promise<number> {
+  const stmt = await conn.prepare('INSERT INTO swimmers (user_id, age, stroke_specialty) VALUES (?, ?, ?)')
+  const result = await stmt.run([data.userId, data.age, data.strokeSpecialty])
   return result.lastInsertRowid as number
 }
 
-export function getSwimmerByUserId(db: Database.Database, userId: number): Swimmer | undefined {
-  return db.prepare('SELECT * FROM swimmers WHERE user_id = ?').get(userId) as Swimmer | undefined
+export async function getSwimmerByUserId(userId: number): Promise<Swimmer | undefined> {
+  const stmt = await conn.prepare('SELECT * FROM swimmers WHERE user_id = ?')
+  return await stmt.get(userId) as Swimmer | undefined
 }
 
-export function getAllSwimmers(db: Database.Database): SwimmerWithUser[] {
-  return db.prepare(`
+export async function getAllSwimmers(): Promise<SwimmerWithUser[]> {
+  const stmt = await conn.prepare(`
     SELECT s.*, u.name, u.email
     FROM swimmers s
     JOIN users u ON u.id = s.user_id
     ORDER BY u.name
-  `).all() as SwimmerWithUser[]
+  `)
+  return await stmt.all() as SwimmerWithUser[]
 }

@@ -1,5 +1,17 @@
-import Database from 'better-sqlite3'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mockStmt = vi.hoisted(() => ({
+  all: vi.fn(),
+  get: vi.fn(),
+  run: vi.fn(),
+}))
+
+vi.mock('../../db', () => ({
+  conn: {
+    prepare: vi.fn().mockResolvedValue(mockStmt),
+  },
+}))
+
 import { createUser, getUserByEmail } from '../users'
 import { createSwimmer, getSwimmerByUserId, getAllSwimmers } from '../swimmers'
 import { getAllEvents, createEvent, deleteEvent, getEventById } from '../events'
@@ -7,178 +19,134 @@ import { signUpForEvent, withdrawFromEvent, isSignedUp, getSignupsForUser } from
 import { getTeamRecords } from '../records'
 import { getAllMeets } from '../meets'
 
-function createTestDb(): Database.Database {
-  const db = new Database(':memory:')
-  db.exec(`
-    CREATE TABLE users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'swimmer',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE swimmers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL REFERENCES users(id),
-      age INTEGER,
-      stroke_specialty TEXT,
-      joined_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE coaches (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL REFERENCES users(id),
-      bio TEXT,
-      years_experience INTEGER
-    );
-    CREATE TABLE events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      description TEXT,
-      event_date TEXT NOT NULL,
-      location TEXT,
-      event_type TEXT NOT NULL DEFAULT 'practice',
-      created_by INTEGER REFERENCES users(id)
-    );
-    CREATE TABLE event_signups (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-      user_id INTEGER NOT NULL REFERENCES users(id),
-      signed_up_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(event_id, user_id)
-    );
-    CREATE TABLE records (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      swimmer_id INTEGER NOT NULL REFERENCES swimmers(id),
-      stroke TEXT NOT NULL,
-      distance INTEGER NOT NULL,
-      time_seconds REAL NOT NULL,
-      recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE meets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      date TEXT NOT NULL,
-      location TEXT,
-      results_summary TEXT
-    );
-  `)
-  return db
-}
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('users queries', () => {
-  let db: Database.Database
-  beforeEach(() => { db = createTestDb() })
-
-  it('createUser inserts and getUserByEmail retrieves', () => {
-    const id = createUser(db, { name: 'Alice', email: 'alice@test.com', passwordHash: 'hash', role: 'swimmer' })
-    expect(id).toBeGreaterThan(0)
-    const user = getUserByEmail(db, 'alice@test.com')
-    expect(user).toBeDefined()
-    expect(user!.name).toBe('Alice')
-    expect(user!.role).toBe('swimmer')
+  it('createUser calls run and returns lastInsertRowid', async () => {
+    mockStmt.run.mockResolvedValue({ lastInsertRowid: 1 })
+    const id = await createUser({ name: 'Alice', email: 'alice@test.com', passwordHash: 'hash', role: 'swimmer' })
+    expect(id).toBe(1)
+    expect(mockStmt.run).toHaveBeenCalledWith(['Alice', 'alice@test.com', 'hash', 'swimmer'])
   })
 
-  it('getUserByEmail returns undefined for unknown email', () => {
-    expect(getUserByEmail(db, 'nobody@test.com')).toBeUndefined()
+  it('getUserByEmail returns the row from get', async () => {
+    const fakeUser = { id: 1, name: 'Alice', email: 'alice@test.com', password_hash: 'hash', role: 'swimmer', created_at: '' }
+    mockStmt.get.mockResolvedValue(fakeUser)
+    const user = await getUserByEmail('alice@test.com')
+    expect(user).toEqual(fakeUser)
+    expect(mockStmt.get).toHaveBeenCalledWith('alice@test.com')
+  })
+
+  it('getUserByEmail returns undefined when not found', async () => {
+    mockStmt.get.mockResolvedValue(undefined)
+    const user = await getUserByEmail('nobody@test.com')
+    expect(user).toBeUndefined()
   })
 })
 
 describe('swimmers queries', () => {
-  let db: Database.Database
-  beforeEach(() => { db = createTestDb() })
-
-  it('createSwimmer and getSwimmerByUserId round-trips', () => {
-    const userId = createUser(db, { name: 'Bob', email: 'bob@test.com', passwordHash: 'hash', role: 'swimmer' })
-    const swimmerId = createSwimmer(db, { userId, age: 14, strokeSpecialty: 'freestyle' })
-    expect(swimmerId).toBeGreaterThan(0)
-    const swimmer = getSwimmerByUserId(db, userId)
-    expect(swimmer).toBeDefined()
-    expect(swimmer!.stroke_specialty).toBe('freestyle')
+  it('createSwimmer calls run and returns lastInsertRowid', async () => {
+    mockStmt.run.mockResolvedValue({ lastInsertRowid: 5 })
+    const id = await createSwimmer({ userId: 1, age: 14, strokeSpecialty: 'freestyle' })
+    expect(id).toBe(5)
+    expect(mockStmt.run).toHaveBeenCalledWith([1, 14, 'freestyle'])
   })
 
-  it('getAllSwimmers returns all with user names', () => {
-    const u1 = createUser(db, { name: 'C1', email: 'c1@test.com', passwordHash: 'h', role: 'swimmer' })
-    const u2 = createUser(db, { name: 'C2', email: 'c2@test.com', passwordHash: 'h', role: 'swimmer' })
-    createSwimmer(db, { userId: u1, age: 12, strokeSpecialty: 'backstroke' })
-    createSwimmer(db, { userId: u2, age: 13, strokeSpecialty: 'butterfly' })
-    const all = getAllSwimmers(db)
+  it('getSwimmerByUserId returns the row from get', async () => {
+    const fakeSwimmer = { id: 5, user_id: 1, age: 14, stroke_specialty: 'freestyle', joined_at: '' }
+    mockStmt.get.mockResolvedValue(fakeSwimmer)
+    const swimmer = await getSwimmerByUserId(1)
+    expect(swimmer).toEqual(fakeSwimmer)
+  })
+
+  it('getAllSwimmers returns all rows', async () => {
+    const fakeSwimmers = [
+      { id: 1, user_id: 1, age: 12, stroke_specialty: 'backstroke', joined_at: '', name: 'C1', email: 'c1@test.com' },
+      { id: 2, user_id: 2, age: 13, stroke_specialty: 'butterfly', joined_at: '', name: 'C2', email: 'c2@test.com' },
+    ]
+    mockStmt.all.mockResolvedValue(fakeSwimmers)
+    const all = await getAllSwimmers()
     expect(all).toHaveLength(2)
     expect(all.map(s => s.name)).toContain('C1')
   })
 })
 
 describe('events queries', () => {
-  let db: Database.Database
-  beforeEach(() => { db = createTestDb() })
-
-  it('createEvent, getEventById, deleteEvent', () => {
-    const id = createEvent(db, { title: 'Morning Practice', description: 'Early bird', eventDate: '2026-07-01T08:00', location: 'Pool A', eventType: 'practice', createdBy: null })
-    expect(id).toBeGreaterThan(0)
-    const event = getEventById(db, id)
-    expect(event!.title).toBe('Morning Practice')
-    deleteEvent(db, id)
-    expect(getEventById(db, id)).toBeUndefined()
+  it('createEvent calls run and returns lastInsertRowid', async () => {
+    mockStmt.run.mockResolvedValue({ lastInsertRowid: 3 })
+    const id = await createEvent({ title: 'Morning Practice', description: 'Early bird', eventDate: '2026-07-01T08:00', location: 'Pool A', eventType: 'practice', createdBy: null })
+    expect(id).toBe(3)
   })
 
-  it('getAllEvents returns all events', () => {
-    createEvent(db, { title: 'E1', description: '', eventDate: '2026-07-01', location: '', eventType: 'meet', createdBy: null })
-    createEvent(db, { title: 'E2', description: '', eventDate: '2026-07-02', location: '', eventType: 'practice', createdBy: null })
-    expect(getAllEvents(db)).toHaveLength(2)
+  it('getEventById returns the row from get', async () => {
+    const fakeEvent = { id: 3, title: 'Morning Practice', description: null, event_date: '2026-07-01', location: null, event_type: 'practice', created_by: null }
+    mockStmt.get.mockResolvedValue(fakeEvent)
+    const event = await getEventById(3)
+    expect(event!.title).toBe('Morning Practice')
+  })
+
+  it('deleteEvent calls run', async () => {
+    mockStmt.run.mockResolvedValue({})
+    await deleteEvent(3)
+    expect(mockStmt.run).toHaveBeenCalledWith(3)
+  })
+
+  it('getAllEvents returns all rows', async () => {
+    mockStmt.all.mockResolvedValue([{ id: 1 }, { id: 2 }])
+    const events = await getAllEvents()
+    expect(events).toHaveLength(2)
   })
 })
 
 describe('signups queries', () => {
-  let db: Database.Database
-  let userId: number
-  let eventId: number
-  beforeEach(() => {
-    db = createTestDb()
-    userId = createUser(db, { name: 'S', email: 's@test.com', passwordHash: 'h', role: 'swimmer' })
-    eventId = createEvent(db, { title: 'E', description: '', eventDate: '2026-07-01', location: '', eventType: 'practice', createdBy: null })
+  it('isSignedUp returns false when row is undefined', async () => {
+    mockStmt.get.mockResolvedValue(undefined)
+    expect(await isSignedUp(1, 1)).toBe(false)
   })
 
-  it('signUpForEvent and isSignedUp', () => {
-    expect(isSignedUp(db, eventId, userId)).toBe(false)
-    signUpForEvent(db, eventId, userId)
-    expect(isSignedUp(db, eventId, userId)).toBe(true)
+  it('isSignedUp returns true when row exists', async () => {
+    mockStmt.get.mockResolvedValue({ id: 1 })
+    expect(await isSignedUp(1, 1)).toBe(true)
   })
 
-  it('withdrawFromEvent removes signup', () => {
-    signUpForEvent(db, eventId, userId)
-    withdrawFromEvent(db, eventId, userId)
-    expect(isSignedUp(db, eventId, userId)).toBe(false)
+  it('signUpForEvent calls run', async () => {
+    mockStmt.run.mockResolvedValue({})
+    await signUpForEvent(1, 1)
+    expect(mockStmt.run).toHaveBeenCalledWith([1, 1])
   })
 
-  it('getSignupsForUser returns signed-up events', () => {
-    signUpForEvent(db, eventId, userId)
-    const signups = getSignupsForUser(db, userId)
+  it('withdrawFromEvent calls run', async () => {
+    mockStmt.run.mockResolvedValue({})
+    await withdrawFromEvent(1, 1)
+    expect(mockStmt.run).toHaveBeenCalledWith([1, 1])
+  })
+
+  it('getSignupsForUser returns rows from all', async () => {
+    const fakeSignups = [{ id: 1, event_id: 2, user_id: 1, signed_up_at: '' }]
+    mockStmt.all.mockResolvedValue(fakeSignups)
+    const signups = await getSignupsForUser(1)
     expect(signups).toHaveLength(1)
-    expect(signups[0].event_id).toBe(eventId)
+    expect(signups[0].event_id).toBe(2)
   })
 })
 
 describe('records queries', () => {
-  let db: Database.Database
-  beforeEach(() => { db = createTestDb() })
-
-  it('getTeamRecords returns records with swimmer info', () => {
-    const uid = createUser(db, { name: 'R', email: 'r@test.com', passwordHash: 'h', role: 'swimmer' })
-    const sid = createSwimmer(db, { userId: uid, age: 15, strokeSpecialty: 'freestyle' })
-    db.prepare(`INSERT INTO records (swimmer_id, stroke, distance, time_seconds) VALUES (?, ?, ?, ?)`).run(sid, 'freestyle', 100, 58.4)
-    const records = getTeamRecords(db)
+  it('getTeamRecords returns all rows', async () => {
+    const fakeRecords = [{ id: 1, swimmer_id: 1, stroke: 'freestyle', distance: 100, time_seconds: 58.4, recorded_at: '', name: 'R' }]
+    mockStmt.all.mockResolvedValue(fakeRecords)
+    const records = await getTeamRecords()
     expect(records).toHaveLength(1)
     expect(records[0].stroke).toBe('freestyle')
   })
 })
 
 describe('meets queries', () => {
-  let db: Database.Database
-  beforeEach(() => { db = createTestDb() })
-
-  it('getAllMeets returns all meets', () => {
-    db.prepare(`INSERT INTO meets (name, date, location, results_summary) VALUES (?, ?, ?, ?)`).run('Spring Invite', '2026-05-10', 'City Pool', '1st place')
-    const meets = getAllMeets(db)
+  it('getAllMeets returns all rows', async () => {
+    const fakeMeets = [{ id: 1, name: 'Spring Invite', date: '2026-05-10', location: 'City Pool', results_summary: '1st place' }]
+    mockStmt.all.mockResolvedValue(fakeMeets)
+    const meets = await getAllMeets()
     expect(meets).toHaveLength(1)
     expect(meets[0].name).toBe('Spring Invite')
   })

@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import { conn } from '../db';
 
 export interface Record {
   id: number
@@ -10,16 +10,18 @@ export interface Record {
   name?: string
 }
 
-export function getTeamRecords(db: Database.Database): Record[] {
-  return db.prepare(`
+export async function getTeamRecords(): Promise<Record[]> {
+  const stmt = await conn.prepare(`
     SELECT r.*, u.name
     FROM records r
     JOIN swimmers s ON s.id = r.swimmer_id
     JOIN users u ON u.id = s.user_id
     ORDER BY r.stroke, r.distance, r.time_seconds ASC
-  `).all() as Record[]
+  `)
+  return await stmt.all() as Record[]
 }
 
-export function getRecordsForSwimmer(db: Database.Database, swimmerId: number): Record[] {
-  return db.prepare('SELECT * FROM records WHERE swimmer_id = ? ORDER BY stroke, distance').all(swimmerId) as Record[]
+export async function getRecordsForSwimmer(swimmerId: number): Promise<Record[]> {
+  const stmt = await conn.prepare('SELECT * FROM records WHERE swimmer_id = ? ORDER BY stroke, distance')
+  return await stmt.all(swimmerId) as Record[]
 }

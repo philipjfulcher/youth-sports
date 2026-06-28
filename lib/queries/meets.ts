@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import { conn } from '../db';
 
 export interface Meet {
   id: number
@@ -8,6 +8,7 @@ export interface Meet {
   results_summary: string | null
 }
 
-export function getAllMeets(db: Database.Database): Meet[] {
-  return db.prepare('SELECT * FROM meets ORDER BY date DESC').all() as Meet[]
+export async function getAllMeets(): Promise<Meet[]> {
+  const stmt = await conn.prepare('SELECT * FROM meets ORDER BY date DESC')
+  return await stmt.all() as Meet[]
 }

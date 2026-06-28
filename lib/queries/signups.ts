@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import { conn } from '../db';
 
 export interface EventSignup {
   id: number
@@ -7,19 +7,23 @@ export interface EventSignup {
   signed_up_at: string
 }
 
-export function getSignupsForUser(db: Database.Database, userId: number): EventSignup[] {
-  return db.prepare('SELECT * FROM event_signups WHERE user_id = ?').all(userId) as EventSignup[]
+export async function getSignupsForUser(userId: number): Promise<EventSignup[]> {
+  const stmt = await conn.prepare('SELECT * FROM event_signups WHERE user_id = ?')
+  return await stmt.all(userId) as EventSignup[]
 }
 
-export function isSignedUp(db: Database.Database, eventId: number, userId: number): boolean {
-  const row = db.prepare('SELECT id FROM event_signups WHERE event_id = ? AND user_id = ?').get(eventId, userId)
+export async function isSignedUp(eventId: number, userId: number): Promise<boolean> {
+  const stmt = await conn.prepare('SELECT id FROM event_signups WHERE event_id = ? AND user_id = ?')
+  const row = await stmt.get([eventId, userId])
   return row !== undefined
 }
 
-export function signUpForEvent(db: Database.Database, eventId: number, userId: number): void {
-  db.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventId, userId)
+export async function signUpForEvent(eventId: number, userId: number): Promise<void> {
+  const stmt = await conn.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)')
+  await stmt.run([eventId, userId])
 }
 
-export function withdrawFromEvent(db: Database.Database, eventId: number, userId: number): void {
-  db.prepare('DELETE FROM event_signups WHERE event_id = ? AND user_id = ?').run(eventId, userId)
+export async function withdrawFromEvent(eventId: number, userId: number): Promise<void> {
+  const stmt = await conn.prepare('DELETE FROM event_signups WHERE event_id = ? AND user_id = ?')
+  await stmt.run([eventId, userId])
 }

@@ -1,5 +1,4 @@
 import { getSession } from '@/lib/session'
-import { getDb } from '@/lib/db'
 import { getAllEvents } from '@/lib/queries/events'
 import { getSignupsForUser } from '@/lib/queries/signups'
 import Link from 'next/link'
@@ -10,9 +9,10 @@ function formatDate(dateStr: string): string {
 
 export default async function DashboardPage() {
   const session = await getSession()
-  const db = getDb()
-  const allEvents = getAllEvents(db)
-  const signups = getSignupsForUser(db, session.userId!)
+  const [allEvents, signups] = await Promise.all([
+    getAllEvents(),
+    getSignupsForUser(session.userId!),
+  ])
   const signedUpIds = new Set(signups.map(s => s.event_id))
   const upcomingSignups = allEvents.filter(e => signedUpIds.has(e.id))
 

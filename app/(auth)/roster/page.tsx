@@ -1,5 +1,4 @@
 import { requireCoach } from '@/lib/session'
-import { getDb } from '@/lib/db'
 import { getAllSwimmers } from '@/lib/queries/swimmers'
 import { getRecordsForSwimmer } from '@/lib/queries/records'
 
@@ -12,15 +11,15 @@ function formatTime(seconds: number): string {
 
 export default async function RosterPage() {
   await requireCoach()
-  const db = getDb()
-  const swimmers = getAllSwimmers(db)
+  const swimmers = await getAllSwimmers()
+  const swimmerRecords = await Promise.all(swimmers.map(s => getRecordsForSwimmer(s.id)))
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-blue-900 mb-8">Team Roster ({swimmers.length} swimmers)</h1>
       <div className="space-y-4">
-        {swimmers.map(swimmer => {
-          const records = getRecordsForSwimmer(db, swimmer.id)
+        {swimmers.map((swimmer, idx) => {
+          const records = swimmerRecords[idx]
           return (
             <div key={swimmer.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
               <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
