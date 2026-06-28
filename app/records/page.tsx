@@ -10,9 +10,9 @@ function formatTime(seconds: number): string {
   return `${m}:${s}`
 }
 
-export default function RecordsPage() {
+export default async function RecordsPage() {
   const db = getDb()
-  const records = getTeamRecords(db)
+  const records = await getTeamRecords(db)
 
   const grouped = records.reduce<Record<string, typeof records>>((acc, r) => {
     const key = `${r.stroke} — ${r.distance}m`

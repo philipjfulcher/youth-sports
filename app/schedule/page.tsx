@@ -3,9 +3,9 @@ export const dynamic = 'force-dynamic'
 import { getDb } from '@/lib/db'
 import { getAllMeets } from '@/lib/queries/meets'
 
-export default function SchedulePage() {
+export default async function SchedulePage() {
   const db = getDb()
-  const meets = getAllMeets(db)
+  const meets = await getAllMeets(db)
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">

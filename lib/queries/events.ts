@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import type { DatabaseConnection } from '@netlify/database'
 
 export interface Event {
   id: number
@@ -10,24 +10,27 @@ export interface Event {
   created_by: number | null
 }
 
-export function getAllEvents(db: Database.Database): Event[] {
-  return db.prepare('SELECT * FROM events ORDER BY event_date ASC').all() as Event[]
+export async function getAllEvents(db: DatabaseConnection): Promise<Event[]> {
+  return db.sql<Event>`SELECT * FROM events ORDER BY event_date ASC`
 }
 
-export function getEventById(db: Database.Database, id: number): Event | undefined {
-  return db.prepare('SELECT * FROM events WHERE id = ?').get(id) as Event | undefined
+export async function getEventById(db: DatabaseConnection, id: number): Promise<Event | undefined> {
+  const rows = await db.sql<Event>`SELECT * FROM events WHERE id = ${id} LIMIT 1`
+  return rows[0]
 }
 
-export function createEvent(
-  db: Database.Database,
+export async function createEvent(
+  db: DatabaseConnection,
   data: { title: string; description: string; eventDate: string; location: string; eventType: string; createdBy: number | null }
-): number {
-  const result = db
-    .prepare('INSERT INTO events (title, description, event_date, location, event_type, created_by) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(data.title, data.description, data.eventDate, data.location, data.eventType, data.createdBy)
-  return result.lastInsertRowid as number
+): Promise<number> {
+  const rows = await db.sql<{ id: number }>`
+    INSERT INTO events (title, description, event_date, location, event_type, created_by)
+    VALUES (${data.title}, ${data.description}, ${data.eventDate}, ${data.location}, ${data.eventType}, ${data.createdBy})
+    RETURNING id
+  `
+  return rows[0].id
 }
 
-export function deleteEvent(db: Database.Database, id: number): void {
-  db.prepare('DELETE FROM events WHERE id = ?').run(id)
+export async function deleteEvent(db: DatabaseConnection, id: number): Promise<void> {
+  await db.sql`DELETE FROM events WHERE id = ${id}`
 }

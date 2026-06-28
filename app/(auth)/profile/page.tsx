@@ -13,8 +13,8 @@ function formatTime(seconds: number): string {
 export default async function ProfilePage() {
   const session = await getSession()
   const db = getDb()
-  const swimmer = getSwimmerByUserId(db, session.userId!)
-  const records = swimmer ? getRecordsForSwimmer(db, swimmer.id) : []
+  const swimmer = await getSwimmerByUserId(db, session.userId!)
+  const records = swimmer ? await getRecordsForSwimmer(db, swimmer.id) : []
 
   return (
     <div className="max-w-2xl">

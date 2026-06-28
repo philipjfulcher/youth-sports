@@ -18,8 +18,10 @@ const eventTypeBadge: Record<string, string> = {
 export default async function EventsPage() {
   const session = await getSession()
   const db = getDb()
-  const events = getAllEvents(db)
-  const signups = getSignupsForUser(db, session.userId!)
+  const [events, signups] = await Promise.all([
+    getAllEvents(db),
+    getSignupsForUser(db, session.userId!),
+  ])
   const signedUpIds = new Set(signups.map(s => s.event_id))
 
   return (
