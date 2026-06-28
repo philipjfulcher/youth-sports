@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/session'
-import { logout } from '@/app/actions/auth'
+import { LogoutButton } from '@/app/components/LogoutButton'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -18,9 +18,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           {session.role === 'coach' && <Link href="/roster" className="hover:text-blue-200">Roster</Link>}
           <span className="text-blue-300">|</span>
           <span className="text-blue-200">{session.name}</span>
-          <form action={logout}>
-            <button type="submit" className="text-blue-300 hover:text-white">Sign out</button>
-          </form>
+          <LogoutButton />
         </div>
       </nav>
       <main className="max-w-5xl mx-auto px-6 py-10">{children}</main>
