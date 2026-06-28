@@ -72,19 +72,21 @@ function runMigrations(db: Database.Database): void {
 }
 
 function autoSeed(db: Database.Database): void {
-  const count = (db.prepare('SELECT COUNT(*) as n FROM users').get() as { n: number }).n
-  if (count > 0) return
+  // Use an exclusive transaction so parallel build workers don't race each other
+  const seed = db.transaction(() => {
+    const count = (db.prepare('SELECT COUNT(*) as n FROM users').get() as { n: number }).n
+    if (count > 0) return
 
   // Inline seed — bcryptjs hashSync is sync-safe
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const bcrypt = require('bcryptjs')
   const password = bcrypt.hashSync('password123', 10)
 
-  const coach1Id = (db.prepare('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)').run('Coach Sarah Mitchell', 'sarah@marlins.com', password, 'coach')).lastInsertRowid as number
-  const coach2Id = (db.prepare('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)').run('Coach David Torres', 'david@marlins.com', password, 'coach')).lastInsertRowid as number
+  const coach1Id = (db.prepare('INSERT OR IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)').run('Coach Sarah Mitchell', 'sarah@marlins.com', password, 'coach')).lastInsertRowid as number
+  const coach2Id = (db.prepare('INSERT OR IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)').run('Coach David Torres', 'david@marlins.com', password, 'coach')).lastInsertRowid as number
 
-  db.prepare('INSERT INTO coaches (user_id, bio, years_experience) VALUES (?, ?, ?)').run(coach1Id, 'Sarah has 12 years of competitive swimming coaching experience. Former NCAA Division I swimmer at UNC. Specializes in butterfly and individual medley.', 12)
-  db.prepare('INSERT INTO coaches (user_id, bio, years_experience) VALUES (?, ?, ?)').run(coach2Id, 'David is a USA Swimming certified coach with a focus on sprint freestyle and backstroke. He brings energy and technical precision to every practice.', 7)
+  db.prepare('INSERT OR IGNORE INTO coaches (user_id, bio, years_experience) VALUES (?, ?, ?)').run(coach1Id, 'Sarah has 12 years of competitive swimming coaching experience. Former NCAA Division I swimmer at UNC. Specializes in butterfly and individual medley.', 12)
+  db.prepare('INSERT OR IGNORE INTO coaches (user_id, bio, years_experience) VALUES (?, ?, ?)').run(coach2Id, 'David is a USA Swimming certified coach with a focus on sprint freestyle and backstroke. He brings energy and technical precision to every practice.', 7)
 
   const swimmerData = [
     { name: 'Emma Johnson', email: 'emma@marlins.com', age: 14, stroke: 'freestyle' },
@@ -100,8 +102,8 @@ function autoSeed(db: Database.Database): void {
   const swimmerIds: number[] = []
   const swimmerUserIds: number[] = []
   for (const s of swimmerData) {
-    const userId = (db.prepare('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)').run(s.name, s.email, password, 'swimmer')).lastInsertRowid as number
-    const swimmerId = (db.prepare('INSERT INTO swimmers (user_id, age, stroke_specialty) VALUES (?, ?, ?)').run(userId, s.age, s.stroke)).lastInsertRowid as number
+    const userId = (db.prepare('INSERT OR IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)').run(s.name, s.email, password, 'swimmer')).lastInsertRowid as number
+    const swimmerId = (db.prepare('INSERT OR IGNORE INTO swimmers (user_id, age, stroke_specialty) VALUES (?, ?, ?)').run(userId, s.age, s.stroke)).lastInsertRowid as number
     swimmerIds.push(swimmerId)
     swimmerUserIds.push(userId)
   }
@@ -121,12 +123,12 @@ function autoSeed(db: Database.Database): void {
     [swimmerIds[7], 'butterfly', 100, 62.44],
   ]
   for (const [sid, stroke, distance, time] of recordData) {
-    db.prepare('INSERT INTO records (swimmer_id, stroke, distance, time_seconds) VALUES (?, ?, ?, ?)').run(sid, stroke, distance, time)
+    db.prepare('INSERT OR IGNORE INTO records (swimmer_id, stroke, distance, time_seconds) VALUES (?, ?, ?, ?)').run(sid, stroke, distance, time)
   }
 
-  db.prepare('INSERT INTO meets (name, date, location, results_summary) VALUES (?, ?, ?, ?)').run('Spring Invitational', '2026-03-15', 'Riverside Aquatic Center', '2nd place overall — 4 individual event wins, 1 relay championship')
-  db.prepare('INSERT INTO meets (name, date, location, results_summary) VALUES (?, ?, ?, ?)').run('County Championships', '2026-04-22', 'Westfield Natatorium', '1st place — team scored 312 points, 6 personal records broken')
-  db.prepare('INSERT INTO meets (name, date, location, results_summary) VALUES (?, ?, ?, ?)').run('Tri-City Dual Meet', '2026-05-08', 'Lakeside YMCA', 'Won 58-42 — strong showing in backstroke and butterfly events')
+  db.prepare('INSERT OR IGNORE INTO meets (name, date, location, results_summary) VALUES (?, ?, ?, ?)').run('Spring Invitational', '2026-03-15', 'Riverside Aquatic Center', '2nd place overall — 4 individual event wins, 1 relay championship')
+  db.prepare('INSERT OR IGNORE INTO meets (name, date, location, results_summary) VALUES (?, ?, ?, ?)').run('County Championships', '2026-04-22', 'Westfield Natatorium', '1st place — team scored 312 points, 6 personal records broken')
+  db.prepare('INSERT OR IGNORE INTO meets (name, date, location, results_summary) VALUES (?, ?, ?, ?)').run('Tri-City Dual Meet', '2026-05-08', 'Lakeside YMCA', 'Won 58-42 — strong showing in backstroke and butterfly events')
 
   const eventDates: [string, string, string, string, string][] = [
     ['Morning Practice', 'Regular weekday morning practice. Focus on turns and underwaters.', '2026-07-07T07:00', 'Riverside Aquatic Center', 'practice'],
@@ -140,14 +142,17 @@ function autoSeed(db: Database.Database): void {
 
   const eventIds: number[] = []
   for (const [title, description, date, location, type] of eventDates) {
-    const id = (db.prepare('INSERT INTO events (title, description, event_date, location, event_type, created_by) VALUES (?, ?, ?, ?, ?, ?)').run(title, description, date, location, type, coach1Id)).lastInsertRowid as number
+    const id = (db.prepare('INSERT OR IGNORE INTO events (title, description, event_date, location, event_type, created_by) VALUES (?, ?, ?, ?, ?, ?)').run(title, description, date, location, type, coach1Id)).lastInsertRowid as number
     eventIds.push(id)
   }
 
-  db.prepare('INSERT INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[0], swimmerUserIds[0])
-  db.prepare('INSERT INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[0], swimmerUserIds[1])
-  db.prepare('INSERT INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[0], swimmerUserIds[2])
-  db.prepare('INSERT INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[2], swimmerUserIds[0])
-  db.prepare('INSERT INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[2], swimmerUserIds[3])
-  db.prepare('INSERT INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[2], swimmerUserIds[4])
+  db.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[0], swimmerUserIds[0])
+  db.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[0], swimmerUserIds[1])
+  db.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[0], swimmerUserIds[2])
+  db.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[2], swimmerUserIds[0])
+  db.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[2], swimmerUserIds[3])
+  db.prepare('INSERT OR IGNORE INTO event_signups (event_id, user_id) VALUES (?, ?)').run(eventIds[2], swimmerUserIds[4])
+  }) // end transaction
+
+  seed()
 }
