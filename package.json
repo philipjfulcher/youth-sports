@@ -12,6 +12,7 @@
     "seed": "npx tsx data/seed.ts"
   },
   "dependencies": {
+    "@tursodatabase/serverless": "^1.2.3",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",
     "iron-session": "^8.0.4",
