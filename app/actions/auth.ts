@@ -1,7 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import { getDb } from '@/lib/db'
 import { getUserByEmail, createUser } from '@/lib/queries/users'
 import { createSwimmer } from '@/lib/queries/swimmers'
