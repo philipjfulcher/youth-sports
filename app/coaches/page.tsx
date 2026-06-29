@@ -2,7 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { getAllCoaches } from '@/lib/queries/coaches'
 
-export default async function AboutPage() {
+export default async function CoachesPage() {
+
   const coaches = await getAllCoaches()
 
   return (
