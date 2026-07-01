@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import path from 'path'
 
 // Mock fs/promises so tests don't read real files
 vi.mock('fs/promises', () => ({
@@ -9,7 +8,7 @@ vi.mock('fs/promises', () => ({
 import * as fs from 'fs/promises'
 
 // Import after mocking
-import { getHandbookContent } from './page'
+import { getHandbookContent } from '@/lib/handbook'
 
 describe('getHandbookContent', () => {
   beforeEach(() => {
@@ -17,7 +16,7 @@ describe('getHandbookContent', () => {
   })
 
   it('returns file content for a valid slug', async () => {
-    vi.mocked(fs.readFile).mockResolvedValue('# Hello' as any)
+    vi.mocked(fs.readFile).mockResolvedValue('# Hello' as unknown as Promise<Buffer>)
     const result = await getHandbookContent('swimmers')
     expect(result).toBe('# Hello')
   })

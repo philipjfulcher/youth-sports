@@ -1,21 +1,9 @@
-import { readFile } from 'fs/promises'
-import path from 'path'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import { handbookSections } from '@/content/handbooks/index'
+import { getHandbookContent } from '@/lib/handbook'
 
 export const dynamic = 'force-dynamic'
-
-export async function getHandbookContent(slug: string): Promise<string | null> {
-  const filePath = path.join(process.cwd(), 'content', 'handbooks', `${slug}.md`)
-  try {
-    const content = await readFile(filePath, 'utf-8')
-    return content
-  } catch (err: any) {
-    if (err.code === 'ENOENT') return null
-    throw err
-  }
-}
 
 export default async function HandbookPage({
   searchParams,
@@ -23,9 +11,10 @@ export default async function HandbookPage({
   searchParams: { section?: string }
 }) {
   const validSlugs = handbookSections.map((s) => s.slug)
+  const section = Array.isArray(searchParams.section) ? searchParams.section[0] : searchParams.section
   const activeSlug =
-    searchParams.section && validSlugs.includes(searchParams.section as any)
-      ? searchParams.section
+    section && validSlugs.includes(section)
+      ? section
       : handbookSections[0].slug
 
   const content = await getHandbookContent(activeSlug)
