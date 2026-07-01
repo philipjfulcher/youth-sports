@@ -10,7 +10,7 @@ export default async function HandbookPage({
 }: {
   searchParams: { section?: string }
 }) {
-  const validSlugs = handbookSections.map((s) => s.slug)
+  const validSlugs: string[] = handbookSections.map((s) => s.slug)
   const section = Array.isArray(searchParams.section) ? searchParams.section[0] : searchParams.section
   const activeSlug =
     section && validSlugs.includes(section)
